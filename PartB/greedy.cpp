@@ -141,11 +141,24 @@ int hS(const set<int>& v, const int& index, const vector< set<int> >& S) {
     return deghalf - nS;
 }
 
-void coverDegree(const set<int>& v, const int& index, const vector< set<int> >& S) {
-    int cont = 0;
-    //for (int i = 0; i < V.size(); i++) {
-      //  if (hS(V[i], i, S) > 0)
-    //}
+set<int> coverDegree(const set<int>& v, const vector< set<int> >& S) {
+    set<int> u;
+    for (auto x: v) {
+        int p = hS(v, x, S);
+        if (p > 0) {
+            u.insert(x);
+        } 
+    }
+    return u;
+}
+
+void eraseVertices(const int& i, const set<int>& u, vector< set<int> >& S) {
+    set<int> tmp;
+    for (auto x: S[i]) {
+        if (u.find(x) == u.end()) // si no encuentro el vertice x en u entonces no lo tengo que borrar
+            tmp.insert(x);
+    }
+    S[i] = tmp;
 }
 
 void greedyHeuristic() {
@@ -164,8 +177,10 @@ void greedyHeuristic() {
         S_barret[i] = V[i];
     }
 
+    // print ordered V
+    cout << endl;
     for (int i = 0; i < V.size(); i++) {
-        cout << "V of " << i+1 << ": ";
+        cout << "V - N of " << i+1 << ": ";
         for (auto x : V[i])
             cout << x+1 << " ";
         cout << endl;
@@ -175,21 +190,31 @@ void greedyHeuristic() {
         int p = hS(V[i], i, S);
         if (p > 0) {
             for (int j = 0; j < p; j++) {
-                /* Aquesta es la part que no se com fer
-                    std::set<int>::iterator it = V[i].begin();
-                    std::advance(it, j);
-                    cout << "u: ";
-                    set<int> u = V[*it]; // u* <- argmax{cover-degree(u)|u c Ns_barret(V[i])}
-                    for (auto x : u)
-                        cout << x+1 << " ";
-                    S.push_back(u);
-                    S_barret.erase(i); //indice de u puede ser la i probablemente // Supongo que se puede hacer así lo de S_barret <- V\S
-                */
-            }
-            
+                // u* <- argmax{cover-degree(u)|u c Ns_barret(V[i])}
+                set<int> u = coverDegree(V[i], S_barret); // es V[i] o V[j] ???
+                if (u.size() > 0) S[i] = u; //S.push_back(u);
+                eraseVertices(i,u,S_barret); // V\S
+            } 
             //cout << endl;
         }
+
+        
     }
+    cout << endl;
+    for (int i = 0; i < S_barret.size(); i++) {
+        cout << "S_barret - N of " << i+1 << ": ";
+        for (auto x : S_barret[i])
+            cout << x+1 << " ";
+        cout << endl;
+    }
+    cout << endl;
+    for (int i = 0; i < S.size(); i++) {
+        cout << "Solution - N of " << i+1 << ": ";
+        for (auto x : S[i])
+            cout << x+1 << " ";
+        cout << endl;
+    }
+    cout << endl;
     solution = 53180.08;
     //return S;
 }
