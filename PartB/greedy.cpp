@@ -35,6 +35,7 @@
 #include <set>
 #include <limits>
 #include <iomanip>
+#include <queue>
 
 // global variables concerning the random number generator (in case needed)
 time_t t;
@@ -44,9 +45,13 @@ Random* rnd;
 int n_of_nodes;
 int n_of_arcs;
 vector< set<int> > neighbors;
+vector< int > OrdenadoToOriginal; // dado un indice ordenado obtienes el indice original
+vector< int > OriginalToOrdenado; // dado un indice original obtienes el indice ordenado
 
 // value solution parameter
-float solution;
+vector< set<int> > solutionSet;
+vector< vector<int> > solutionVector;
+int solution;
 
 // string for keeping the name of the input file
 string inputFile;
@@ -121,6 +126,20 @@ bool is_minimal(vector<vector<int>>& adj, const int& v, const set<int>& set, con
 	return true;
 }
 
+vector< vector<int> > parseSetToVector(const vector< set<int> >& S) {
+    vector< vector<int> > vec = vector< vector<int> >(n_of_nodes);
+    for (int i = 0; i < S.size(); i++) {
+        vector<int> innerVec = vector<int>(S[i].size());
+        int j = 0;
+        for (auto x : S[i]){
+            innerVec[j] = x;
+            j++;
+        }
+        vec[i] = innerVec;
+    }
+    return vec;
+}
+
 bool ascendingDegree(set<int> s1, set<int> s2) {
     return (s1.size() < s2.size());
 }
@@ -135,21 +154,49 @@ int neighborsOfIn(const int& index, const vector< set<int> >& S) {
     return sum;
 }
 
-int hS(const set<int>& v, const int& index, const vector< set<int> >& S) {
-    int deghalf = ceil((float)v.size()/(float)2); 
+int hS(const int& deg, const int& index, const vector< set<int> >& S) {
+    int deghalf = ceil((float)deg/(float)2); 
     int nS = neighborsOfIn(index, S);
     return deghalf - nS;
 }
 
-set<int> coverDegree(const set<int>& v, const vector< set<int> >& S) {
-    set<int> u;
-    for (auto x: v) {
-        int p = hS(v, x, S);
+int coverDegree(const int& i, const vector< set<int> >& V, const vector< set<int> >& S) {
+    // cover-degree(v) = |{ u ∈ N(v) : hS(u) > 0}|
+    // i = nodo del grafo === indice en el vector entiendo que V
+    // V y S son vectores ordenados por grado entonces 
+    int maxIndex = -1;
+    int maxValue = -1;
+    
+    for (auto it = V[i].end(); true; it--) {
+        int num = 0;
+        // u es aresta a nodo desde V[i]
+        // necesito el grado que tiene el nodo u
+        int u = *it; 
+        int p = hS(neighbors[u].size(),OriginalToOrdenado[u],S);
         if (p > 0) {
-            u.insert(x);
-        } 
+            num += 1;
+        }
+        if (maxValue < num) {
+            maxIndex = u;
+        }
+        if (it == V[i].begin())
+            break;
     }
-    return u;
+
+
+    for (auto u: V[i]) {
+        int num = 0;
+        // u es aresta a nodo desde V[i]
+        // necesito el grado que tiene el nodo u 
+        int p = hS(neighbors[u].size(),OriginalToOrdenado[u],S);
+        if (p > 0) {
+            num += 1;
+        }
+        if (maxValue < num) {
+            maxIndex = u;
+        }
+    }
+    return maxIndex;
 }
 
 void eraseVertices(const int& i, const set<int>& u, vector< set<int> >& S) {
@@ -161,62 +208,88 @@ void eraseVertices(const int& i, const set<int>& u, vector< set<int> >& S) {
     S[i] = tmp;
 }
 
-void greedyHeuristic() {
+void printNeighborsOf(const vector< set<int> >& V, string name, bool ordered) {
+    cout << ""<< endl;
+    for (int i = 0; i < V.size(); i++) {
+        cout << name << " - N of ";
+        if (ordered)
+            cout << OrdenadoToOriginal[i]+1 << ": ";
+        else
+            cout << i+1 << ": ";
+        for (auto x : V[i]) 
+            cout << x+1 << " ";
+        cout << endl;
+    }
+}
+
+vector< set<int> > greedyHeuristic() {
     // Pan's greedy algorithm
     vector< set<int> > V = vector< set<int> >(n_of_nodes); // neighbors in ascending order of the degree
     vector< set<int> > S = vector< set<int> >(n_of_nodes); // S conjunt buit
     vector< set<int> > S_barret = vector< set<int> >(n_of_nodes); // S barret conjunt del que son a V(neighbours) i no a S
+    OrdenadoToOriginal = vector< int >(n_of_nodes,-1);
+    OriginalToOrdenado = vector< int >(n_of_nodes,-1);
+    vector< int > marcat = vector< int >(n_of_nodes,-1);
 
     for (int i = 0; i < neighbors.size(); i++) { // Copy V <- neighbors
         V[i] = neighbors[i];
     }
 
-    sort(V.begin(),V.end(),ascendingDegree); // Lo he de ordenar?? En el pseudo codigo sale que sí pero luego pierdo los indices :(
+    sort(V.begin(),V.end(),ascendingDegree); // ordenar V
 
     for (int i = 0; i < V.size(); i++) { // Copy S_barret <- V
+        for (int j = 0; j < neighbors.size(); j++) {
+            if (V[i] == neighbors[j] && OrdenadoToOriginal[i] == -1 && marcat[j] == -1) {
+                OrdenadoToOriginal[i] = j;
+                OriginalToOrdenado[j] = i;
+                marcat[j] = 0;
+                continue;
+            }
+        }
         S_barret[i] = V[i];
     }
 
-    // print ordered V
-    cout << endl;
-    for (int i = 0; i < V.size(); i++) {
-        cout << "V - N of " << i+1 << ": ";
-        for (auto x : V[i])
-            cout << x+1 << " ";
-        cout << endl;
-    }
-
-    for (int i = 0; i < V.size(); i++) {
-        int p = hS(V[i], i, S);
-        if (p > 0) {
-            for (int j = 0; j < p; j++) {
-                // u* <- argmax{cover-degree(u)|u c Ns_barret(V[i])}
-                set<int> u = coverDegree(V[i], S_barret); // es V[i] o V[j] ???
-                if (u.size() > 0) S[i] = u; //S.push_back(u);
-                eraseVertices(i,u,S_barret); // V\S
-            } 
-            //cout << endl;
+    //printNeighborsOf(V,"Ordered By Degree", true);
+    cout << "starting greedy..." << endl;
+    set<int> dom;
+    set<pair<int,int>> arestes;
+    // dom conte al final tots els vertex que pertañen a un conjunt dominant pero amb vertex innecesaris
+    for (int i = V.size()-1; i >= 0; i--) {
+    //for (int i = 0; i < V.size(); i++) {
+        if (!V[i].empty()) {
+            dom.insert(OrdenadoToOriginal[i]);
+            for(auto x: V[i]) {
+                pair<int,int> p(min(OrdenadoToOriginal[i],x),max(OrdenadoToOriginal[i],x));
+                arestes.insert(p);
+                S_barret[OriginalToOrdenado[x]].erase(OrdenadoToOriginal[i]);
+            }
         }
+        if (arestes.size() >= n_of_arcs) {
+            //cout << "all arestes reached" << endl;
+            break;
+        }
+    }
+    solution = dom.size();
 
-        
-    }
-    cout << endl;
-    for (int i = 0; i < S_barret.size(); i++) {
-        cout << "S_barret - N of " << i+1 << ": ";
-        for (auto x : S_barret[i])
-            cout << x+1 << " ";
-        cout << endl;
-    }
-    cout << endl;
-    for (int i = 0; i < S.size(); i++) {
-        cout << "Solution - N of " << i+1 << ": ";
-        for (auto x : S[i])
-            cout << x+1 << " ";
-        cout << endl;
-    }
-    cout << endl;
-    solution = 53180.08;
-    //return S;
+    // Greedy Pan's pero no funciona
+    /*for (int i = 0; i < V.size(); i++) {
+        int p = hS(V[i].size(), OriginalToOrdenado[i], S);
+        if (p > 0) {
+            // for j = 1 to ρ do
+            for (int j = 0; j < p; j++) {
+                int u = coverDegree(i,V, S_barret); 
+                if (u >= 0)  {
+                    S[u] = neighbors[u];
+                }
+                eraseVertices(i,neighbors[u],S_barret); // V\S
+            } 
+        }
+    }*/
+    //printNeighborsOf(S_barret,"S_barret",true);
+    //printNeighborsOf(S,"Solution",false);
+   //cout << endl;
+
+    return S;
 }
 
 
@@ -261,12 +334,7 @@ int main( int argc, char **argv ) {
     // the computation time starts now
     Timer timer;
 
-    for (int i = 0; i < neighbors.size(); i++) {
-        cout << "neighbors of " << i+1 << ": ";
-        for (auto x : neighbors[i])
-            cout << x+1 << " ";
-        cout << endl;
-    }
+    //printNeighborsOf(neighbors,"Origin",false);
 
     // Example for requesting the elapsed computation time at any moment: 
     double ct = timer.elapsed_time(Timer::VIRTUAL);
@@ -274,10 +342,12 @@ int main( int argc, char **argv ) {
     // HERE GOES YOUR GREEDY HEURISTIC
     // When finished with generating a solution, first take the computation 
     // time as explained above. Say you store it in variable ct.
-    greedyHeuristic();
+    solutionSet = greedyHeuristic();
+
+    double ctend = timer.elapsed_time(Timer::VIRTUAL);
 
     // Then write the following to the screen: 
-    cout << "value " << solution << "\ttime " << ct << endl;
+    cout << "value " << solution << "\ttime " << ctend-ct << endl;
     
 }
 
