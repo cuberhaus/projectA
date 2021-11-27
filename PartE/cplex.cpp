@@ -34,6 +34,7 @@
 #include <vector>
 #include <set>
 #include <limits>
+#include <math.h>
 
 // the following "include" is necessary for the correct working of CPLEX.
 #include <ilcplex/ilocplex.h>
@@ -114,7 +115,38 @@ void run_cplex(Timer& timer) {
         IloModel model(env);
 
         // HERE GOES YOUR ILP MODEL FOR THE MPIDS PROBLEM
+       
+        // create an array of binary variables, 
+        // one for each node of the input graph
+        IloNumVarArray x(env, n_of_nodes, 0, 1, ILOINT);
     
+        // create an expression
+        IloExpr obj(env);
+        // add all node variables to the expression
+        for (int i = 0; i < n_of_nodes; ++i) obj += x[i];
+        // add a minimization function to the model. 
+        // This function minimizes the expression generated before
+        model.add(IloMinimize(env, obj));
+        obj.end();
+
+        // generate the constraints 
+        for (int i = 0; i < n_of_nodes; ++i) {
+            // each constraint is generated as an expression
+            IloExpr expr(env);
+            // add the variable concerning the current node v_i to the expression
+            //expr += x[i];
+            int min_dom_neighbours = ceil(neighbors[i].size()/2.0);
+            // add all variables concerning the neighbors of v_i to the expression
+            for (set<int>::iterator sit = neighbors[i].begin(); sit != neighbors[i].end(); ++sit) {
+             
+             expr += x[*sit];
+            }
+            // add the corresponding constraint to the model
+            model.add(expr >= min_dom_neighbours);
+        }
+
+
+
         IloCplex cpl(model);
 
         cpl.setParam(IloCplex::TiLim, time_limit);
