@@ -264,10 +264,7 @@ vector< set<int> > greedyHeuristic() {
                 S_barret[OriginalToOrdenado[x]].erase(OrdenadoToOriginal[i]);
             }
         }
-        if (arestes.size() >= n_of_arcs) {
-            //cout << "all arestes reached" << endl;
-            break;
-        }
+        if (arestes.size() >= n_of_arcs && dom.size() > V.size()/2) break;
     }
     solution = dom.size();
 
