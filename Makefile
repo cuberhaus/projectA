@@ -1,5 +1,5 @@
 all:
-	zip -r PROJ.24.zip docs/ sources/
+	zip -r PROJ.24.zip Manual.pdf sources/
 
 clean:
-	rm PROJ.24.zip
+	rm *.zip
