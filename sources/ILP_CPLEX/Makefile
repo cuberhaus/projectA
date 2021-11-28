@@ -1,4 +1,4 @@
-TARGET = greedy cplex local_search metaheuristic hybrid_metaheuristic
+TARGET = cplex 
 CXXFLAGS = -ansi -O3 -fpermissive -std=c++17 
 OBJS = Random.o Timer.o
 CPLOBJS = Random.o Timer.o
@@ -27,21 +27,6 @@ cplex: cplex.o $(CPLOBJS)
 
 cplex.o: cplex.cpp
 	$(CCC) -c $(CCFLAGS) cplex.cpp -o cplex.o 
-
-hybrid_metaheuristic: hybrid_metaheuristic.o $(CPLOBJS)
-	$(CCC) $(CCFLAGS) hybrid_metaheuristic.o $(CPLOBJS) -o hybrid_metaheuristic $(CCLNFLAGS)
-
-hybrid_metaheuristic.o: hybrid_metaheuristic.cpp
-	$(CCC) -c $(CCFLAGS) hybrid_metaheuristic.cpp -o hybrid_metaheuristic.o 
- 
-greedy: greedy.cpp $(OBJS)
-	${CCC} ${CXXFLAGS} -o $@ $^
-
-local_search: local_search.cpp $(OBJS)
-	${CCC} ${CXXFLAGS} -o $@ $^
-
-metaheuristic: metaheuristic.cpp $(OBJS)
-	${CCC} ${CXXFLAGS} -o $@ $^
 
 clean:
 	@rm -f *~ *.o ${TARGET} core

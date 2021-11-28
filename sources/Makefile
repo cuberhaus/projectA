@@ -1,4 +1,3 @@
-# TARGET = greedy local_search basics
 TARGET = greedy basics
 CXXFLAGS = -ansi -O3 -fpermissive -std=c++17 
 OBJS = Random.o Timer.o
@@ -12,13 +11,12 @@ CCOPT = -m64 -O -fPIC -fexceptions -DNDEBUG -DIL_STD -std=c++17 -fpermissive -w
 
 CCFLAGS = $(CCOPT) -I$(CPLEXINCDIR) -I$(CONCERTINCDIR)
 
+# $@ is the name of the target being generated, and $< the first prerequisite
+
 all: ${TARGET}
 
 greedy: greedy.cpp $(OBJS)
 	${CCC} ${CXXFLAGS} -o $@ $^
-
-# local_search: local_search.cpp $(OBJS)
-# 	${CCC} ${CXXFLAGS} -o $@ $^
 
 basics: basics.cc
 	${CCC} ${CXXFLAGS} -o $@ $^
