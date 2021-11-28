@@ -1,4 +1,4 @@
-TARGET = basics.x
+TARGET = basics
 CXXFLAGS = -ansi -O3 -fpermissive -std=c++17 
 
 SYSTEM     = x86-64_linux
@@ -11,7 +11,7 @@ CCFLAGS = $(CCOPT)
 
 all: ${TARGET} input
 # $@ is the name of the target being generated, and $< the first prerequisite
-basics.x: basics.cc
+basics: basics.cc
 	$(CCC) $(CXXFLAGS) -o $@ $^
 Input: 
 	./basics.x < input
