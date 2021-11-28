@@ -1,2 +1,2 @@
 all:
-	zip -r projectA.zip docs/ sources/
+	zip -r PROJ.24.zip docs/ sources/
