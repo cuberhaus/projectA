@@ -1,4 +1,4 @@
-TARGET = greedy local_search 
+TARGET = greedy local_search metaheuristic
 CXXFLAGS = -ansi -O3 -fpermissive -std=c++17 
 OBJS = Random.o Timer.o
 CPLOBJS = Random.o Timer.o
@@ -19,6 +19,10 @@ greedy: greedy.cpp $(OBJS)
 local_search: local_search.cpp $(OBJS)
 	${CCC} ${CXXFLAGS} -o $@ $^
 
+metaheuristic: metaheuristic.cpp $(OBJS)
+	${CCC} ${CXXFLAGS} -o $@ $^
+
 clean:
-	@rm -f *~ *.o *.exe ${TARGET} core
+	@rm -f *~ *.o ${TARGET} core
+
 
