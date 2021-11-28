@@ -21,13 +21,12 @@ greedy: greedy.cpp $(OBJS)
 basics: basics.cc
 	${CCC} ${CXXFLAGS} -o $@ $^
 
-Input: 
-	./basics < ./jocs_de_prova/input.txt
-InputNoMinimal: 
-	./basics < ./jocs_de_prova/inputNoMinimal.txt
-InputNoPositiveInfluence: 
-	./basics < ./jocs_de_prova/inputNoPositiveInfluence.txt
+# Input: 
+# 	./basics < ./jocs_de_prova/input.txt
+# InputNoMinimal: 
+# 	./basics < ./jocs_de_prova/inputNoMinimal.txt
+# InputNoPositiveInfluence: 
+# 	./basics < ./jocs_de_prova/inputNoPositiveInfluence.txt
 
 clean:
 	@rm -f *~ *.o *.exe ${TARGET} core
-
