@@ -24,13 +24,6 @@ void read(int e,set<int>& cjt_dom){
     }
 }
 
-set<int> retorna_set(vector<bool>&d){
-    set<int> s ;
-    for(int i = 0; i < d.size(); ++i){
-        if(d[i]) s.insert(i);
-    }
-    return s;
-}
 
 void update_neighbours(int node, bool del){
     
@@ -79,8 +72,8 @@ set<int> successor_function(set<int>&cjt_domin,set<int>&resta, bool&del, int& no
         del=true;
         node = poss_del[random];//node que hem eliminat
     }
-    else { // no podem eliminar nodes
-        // cout<<"Afegim node"<<endl;
+    else { 
+        
         int random = rand() % poss_add.size()-1; //afegim un node aleatoriament
         succesor.insert(poss_add[random]);
         del=false;
@@ -136,9 +129,6 @@ int main(){
     adj.resize(v);
     read(e,cjt_dom);
     
-    vector<bool> estat(v,true); // Vector per saber quins vertexs esteim agafant i quins no, si true -> esteim agafant el vertex
-    if(is_dominant(cjt_dom))cout<<"Su putissima madre esta fet"<<endl;
-    else cout<<"ME CAGON DEU";
     Timer timer;
     cout<<"INICIAM CERCA LOCAL"<<endl;
     //==============================================================================================================================
@@ -161,16 +151,18 @@ int main(){
         int node=0;
         
         set<int> succesor = successor_function(cjt_dom,resta,del,node);
-        // if(is_dominant(succesor)){
+        
             int diff = cjt_dom.size() - succesor.size();
         
             if( diff > 0 ){ // hem eliminat un node
-                // cout<<"Hem eliminat el node "<<node+1<<endl;
+                
                 if(del){
+                    // cout<<"Hem eliminat el node "<<node+1<<endl;
                     cjt_dom.erase(node);
                     resta.insert(node);
                     
                 }
+                
                 else {
                     cjt_dom.insert(node);
                     resta.erase(node);
@@ -185,32 +177,29 @@ int main(){
                 double prob = pow(exp(1.0), (diff) / (temperatura * 1.0) );
                 if(rand() % 1000 < int(prob * 1000)) {
                     if(del){
+                        // cout<<"Hem eliminat el node "<<node+1<<endl;
                         cjt_dom.erase(node);
-                        resta.insert(node);
-                        
+                        resta.insert(node);     
                     }
+                    
                     else {
                         cjt_dom.insert(node);
                         resta.erase(node);
-
                     }
                     update_neighbours(node,del);
                 }
             }
-        // }
+     
         
        
         ++it_act;
     }
-    set<int> s = retorna_set(estat);
+   
     
     print_set(cjt_dom);
-
     cout<<endl;
-    cout<<v<<endl;
-    cout<<cjt_dom.size()<<endl;
+    cout<<(cjt_dom.size())<<endl;
+    cout<<endl;
     cout<<timer.elapsed_time(Timer::VIRTUAL)<<endl; 
-    if(is_dominant(cjt_dom))cout<<"Su putissima madre esta fet"<<endl;
-    else cout<<"ME CAGON DEU"<<endl;
 
 }
