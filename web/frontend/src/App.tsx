@@ -35,6 +35,15 @@ export default function App() {
   const [rightW, setRightW] = useState(280);
   const [dragging, setDragging] = useState<"left" | "right" | null>(null);
 
+  const manualSetRef = useRef(manualSet);
+  manualSetRef.current = manualSet;
+  const graphDataRef = useRef(graphData);
+  graphDataRef.current = graphData;
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
+  const instanceNameRef = useRef(instanceName);
+  instanceNameRef.current = instanceName;
+
   useEffect(() => { getInstances().then(setInstances).catch(() => {}); }, []);
 
   useEffect(() => {
@@ -84,21 +93,23 @@ export default function App() {
 
   const handleNodeClick = useCallback(
     async (nodeId: number) => {
-      if (!graphData) return;
-      const next = new Set(manualSet);
+      const gd = graphDataRef.current;
+      if (!gd) return;
+      const next = new Set(manualSetRef.current);
       if (next.has(nodeId)) next.delete(nodeId);
       else next.add(nodeId);
       setManualSet(next);
 
       try {
         const params: any = { dominating_set: Array.from(next) };
-        if (source === "instance" && instanceName) params.instance = instanceName;
-        else params.graph_data = { n: graphData.n, edges: graphData.edges };
+        if (sourceRef.current === "instance" && instanceNameRef.current)
+          params.instance = instanceNameRef.current;
+        else params.graph_data = { n: gd.n, edges: gd.edges };
         const v = await validate(params);
         setManualStatus(v.vertex_status);
       } catch {}
     },
-    [graphData, manualSet, source, instanceName]
+    []
   );
 
   const handleRandomize = useCallback(() => {

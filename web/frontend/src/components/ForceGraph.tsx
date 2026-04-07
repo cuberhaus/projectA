@@ -49,6 +49,8 @@ export default function ForceGraph({ graphData, vertexStatus, manualSet, onNodeC
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const simRef = useRef<ReturnType<typeof forceSimulation<GNode>> | null>(null);
+  const onClickRef = useRef(onNodeClick);
+  onClickRef.current = onNodeClick;
 
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
@@ -95,7 +97,7 @@ export default function ForceGraph({ graphData, vertexStatus, manualSet, onNodeC
       .attr("cursor", "pointer")
       .on("click", (event: MouseEvent, d: GNode) => {
         event.stopPropagation();
-        onNodeClick(d.id);
+        onClickRef.current(d.id);
       });
 
     node.append("title").text((d) => {
