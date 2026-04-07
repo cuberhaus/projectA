@@ -1,0 +1,12 @@
+web/frontend/node_modules
+web/frontend/dist
+__pycache__
+*.pyc
+.git
+sources
+PartC
+PartD
+Plantilles
+jocs_de_prova
+*.pdf
+*.zip
