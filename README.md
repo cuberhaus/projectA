@@ -38,7 +38,7 @@ make
 
 An interactive web frontend for exploring and solving MPIDS instances with a D3.js force-directed graph visualization.
 
-**Stack:** Elm (via `vite-plugin-elm`) + D3.js force simulation (via Elm ports) + FastAPI backend
+**Stack:** Elm (via `vite-plugin-elm`) + D3.js force simulation (via Elm ports) + Flask backend (gunicorn in production)
 
 ### Quick Start
 
@@ -72,7 +72,7 @@ web/
 │   │   ├── js/forceGraph.js   # D3.js force simulation
 │   │   └── styles/            # Dark theme CSS
 │   └── elm.json
-├── backend/           # FastAPI + NetworkX
+├── backend/           # Flask + gunicorn
 │   └── app.py
 └── requirements.txt
 ```
@@ -82,4 +82,4 @@ web/
 - **C++17** for all algorithms
 - **IBM CPLEX** for the ILP exact solver
 - **Elm** + **D3.js** (via ports) for the interactive web frontend
-- **FastAPI** + **NetworkX** for the web backend
+- **Flask** + **gunicorn** for the web backend

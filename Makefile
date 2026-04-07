@@ -6,7 +6,7 @@ install: ## Install frontend dependencies
 	cd web/frontend && npm install
 
 dev: ## Start backend + frontend dev servers
-	cd web && uvicorn backend.app:app --host 127.0.0.1 --port 8084 --reload &
+	cd web && flask --app backend.app run --host 127.0.0.1 --port 8084 --reload &
 	cd web/frontend && npm run dev
 
 build: ## Build frontend for production

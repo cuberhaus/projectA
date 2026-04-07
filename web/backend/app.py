@@ -1,47 +1,21 @@
 from __future__ import annotations
 
 import os
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Optional
 
-from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from flask import Flask, abort, jsonify, request, send_from_directory
 
 from . import graph_io, solver
 from .models import Graph
 
-app = FastAPI(title="MPIDS Solver")
-_pool = ThreadPoolExecutor(max_workers=2)
-
 DIST_DIR = Path(__file__).parent.parent / "frontend" / "dist"
 
-
-class GenerateRequest(BaseModel):
-    n: int = 30
-    p: float = 0.15
-    seed: Optional[int] = None
+app = Flask(__name__, static_folder=None)
 
 
-class SolveRequest(BaseModel):
-    instance: Optional[str] = None
-    graph_data: Optional[dict] = None
-    algorithm: str = "greedy"
-    iterations: int = 2000
-    temperature: float = 0.0
-    cooling: float = 0.995
-    seed: Optional[int] = None
-
-
-class ValidateRequest(BaseModel):
-    instance: Optional[str] = None
-    graph_data: Optional[dict] = None
-    dominating_set: list[int]
-
-
-def _parse_graph(instance: str | None, graph_data: dict | None) -> Graph:
+def _parse_graph(data: dict) -> Graph:
+    instance = data.get("instance")
+    graph_data = data.get("graph_data")
     if instance:
         return graph_io.load_instance(instance)
     if graph_data:
@@ -49,91 +23,105 @@ def _parse_graph(instance: str | None, graph_data: dict | None) -> Graph:
             n=graph_data["n"],
             edges=[(e[0], e[1]) for e in graph_data["edges"]],
         )
-    raise HTTPException(400, "Provide instance name or graph_data")
+    abort(400, description="Provide instance name or graph_data")
 
 
 @app.get("/api/status")
-async def status():
-    return {"status": "ok"}
+def status():
+    return jsonify(status="ok")
 
 
 @app.get("/api/instances")
-async def instances():
-    return graph_io.list_instances()
+def instances():
+    return jsonify(graph_io.list_instances())
 
 
 @app.post("/api/generate")
-async def generate(req: GenerateRequest):
-    g = graph_io.generate_random(req.n, req.p, req.seed)
-    return {
-        "n": g.n,
-        "edges": g.edges,
-        "degrees": [g.degree(v) for v in range(g.n)],
-    }
+def generate():
+    data = request.get_json(silent=True) or {}
+    n = data.get("n", 30)
+    p = data.get("p", 0.15)
+    seed = data.get("seed")
+
+    g = graph_io.generate_random(n, p, seed)
+    return jsonify(
+        n=g.n,
+        edges=g.edges,
+        degrees=[g.degree(v) for v in range(g.n)],
+    )
 
 
 @app.post("/api/solve")
-async def solve(req: SolveRequest):
-    g = _parse_graph(req.instance, req.graph_data)
+def solve():
+    data = request.get_json(silent=True) or {}
+    g = _parse_graph(data)
 
-    if req.algorithm == "greedy":
-        fn = lambda: solver.greedy(g)
-    elif req.algorithm == "local_search":
-        fn = lambda: solver.local_search(
+    algorithm = data.get("algorithm", "greedy")
+    if algorithm == "greedy":
+        result = solver.greedy(g)
+    elif algorithm == "local_search":
+        result = solver.local_search(
             g,
-            iterations=req.iterations,
-            temperature=req.temperature,
-            cooling=req.cooling,
-            seed=req.seed,
+            iterations=data.get("iterations", 2000),
+            temperature=data.get("temperature", 0.0),
+            cooling=data.get("cooling", 0.995),
+            seed=data.get("seed"),
         )
     else:
-        raise HTTPException(400, f"Unknown algorithm: {req.algorithm}")
+        abort(400, description=f"Unknown algorithm: {algorithm}")
 
-    loop = __import__("asyncio").get_event_loop()
-    result = await loop.run_in_executor(_pool, fn)
-
-    return {
-        "dominating_set": result.dominating_set,
-        "size": result.size,
-        "time_ms": round(result.time_ms, 2),
-        "nodes_explored": result.nodes_explored,
-        "vertex_status": [
-            {
-                "id": vs.id,
-                "in_set": vs.in_set,
-                "dom_neighbors": vs.dom_neighbors,
-                "needed": vs.needed,
-                "satisfied": vs.satisfied,
-            }
+    return jsonify(
+        dominating_set=result.dominating_set,
+        size=result.size,
+        time_ms=round(result.time_ms, 2),
+        nodes_explored=result.nodes_explored,
+        vertex_status=[
+            dict(
+                id=vs.id,
+                in_set=vs.in_set,
+                dom_neighbors=vs.dom_neighbors,
+                needed=vs.needed,
+                satisfied=vs.satisfied,
+            )
             for vs in result.vertex_status
         ],
-        "trace": result.trace,
-        "n": g.n,
-        "edges": g.edges,
-        "degrees": [g.degree(v) for v in range(g.n)],
-    }
+        trace=result.trace,
+        n=g.n,
+        edges=g.edges,
+        degrees=[g.degree(v) for v in range(g.n)],
+    )
 
 
 @app.post("/api/validate")
-async def validate(req: ValidateRequest):
-    g = _parse_graph(req.instance, req.graph_data)
-    statuses = solver.validate(g, req.dominating_set)
+def validate():
+    data = request.get_json(silent=True) or {}
+    g = _parse_graph(data)
+    dominating_set = data.get("dominating_set", [])
+
+    statuses = solver.validate(g, dominating_set)
     all_satisfied = all(s.satisfied for s in statuses)
-    return {
-        "valid": all_satisfied,
-        "size": len(req.dominating_set),
-        "vertex_status": [
-            {
-                "id": vs.id,
-                "in_set": vs.in_set,
-                "dom_neighbors": vs.dom_neighbors,
-                "needed": vs.needed,
-                "satisfied": vs.satisfied,
-            }
+    return jsonify(
+        valid=all_satisfied,
+        size=len(dominating_set),
+        vertex_status=[
+            dict(
+                id=vs.id,
+                in_set=vs.in_set,
+                dom_neighbors=vs.dom_neighbors,
+                needed=vs.needed,
+                satisfied=vs.satisfied,
+            )
             for vs in statuses
         ],
-    }
+    )
 
 
 if DIST_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="static")
+
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def serve_spa(path: str):
+        file = DIST_DIR / path
+        if file.is_file():
+            return send_from_directory(DIST_DIR, path)
+        return send_from_directory(DIST_DIR, "index.html")

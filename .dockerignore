@@ -1,5 +1,11 @@
 web/frontend/node_modules
-web/frontend/dist
+web/frontend/elm-stuff
+web/frontend/src
+web/frontend/package.json
+web/frontend/package-lock.json
+web/frontend/elm.json
+web/frontend/vite.config.js
+web/frontend/index.html
 __pycache__
 *.pyc
 .git
