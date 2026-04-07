@@ -7,5 +7,6 @@ projectA.tar
 
 web/frontend/node_modules/
 web/frontend/dist/
+web/frontend/elm-stuff/
 __pycache__/
 *.pyc
