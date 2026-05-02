@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+# ── Phase 14 (Option A) — Sentry SDK + JSON-line stdout (no-op if missing) ─
+try:
+    from ._sentry_obs import init_observability  # type: ignore[import-not-found]
+
+    init_observability(service="mpids")
+except ImportError:
+    pass
+
 import os
 from pathlib import Path
 
