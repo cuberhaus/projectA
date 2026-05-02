@@ -7,6 +7,7 @@ try:
         breadcrumb as _crumb,
         span as _span,
         tag as _tag,
+        register_flask_session_id as _register_flask_session_id,
     )
 
     init_observability(service="mpids")
@@ -23,6 +24,9 @@ except ImportError:
     def _span(*_a, **_kw):
         yield None
 
+    def _register_flask_session_id(_app):
+        return None
+
 import os
 from pathlib import Path
 
@@ -34,6 +38,7 @@ from .models import Graph
 DIST_DIR = Path(__file__).parent.parent / "frontend" / "dist"
 
 app = Flask(__name__, static_folder=None)
+_register_flask_session_id(app)
 
 
 def _parse_graph(data: dict) -> Graph:
