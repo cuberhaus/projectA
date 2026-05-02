@@ -2,11 +2,26 @@ from __future__ import annotations
 
 # ── Phase 14 (Option A) — Sentry SDK + JSON-line stdout (no-op if missing) ─
 try:
-    from ._sentry_obs import init_observability  # type: ignore[import-not-found]
+    from ._sentry_obs import (  # type: ignore[import-not-found]
+        init_observability,
+        breadcrumb as _crumb,
+        span as _span,
+        tag as _tag,
+    )
 
     init_observability(service="mpids")
 except ImportError:
-    pass
+    from contextlib import contextmanager
+
+    def _tag(*_a, **_kw):
+        return None
+
+    def _crumb(*_a, **_kw):
+        return None
+
+    @contextmanager
+    def _span(*_a, **_kw):
+        yield None
 
 import os
 from pathlib import Path
@@ -51,7 +66,11 @@ def generate():
     p = data.get("p", 0.15)
     seed = data.get("seed")
 
-    g = graph_io.generate_random(n, p, seed)
+    _tag("n", n)
+    _tag("p", p)
+    _crumb("graph", "generate random instance", n=n, p=p, seed=seed)
+    with _span("graph.generate", description=f"random Erdős–Rényi n={n} p={p}", n=n, p=p):
+        g = graph_io.generate_random(n, p, seed)
     return jsonify(
         n=g.n,
         edges=g.edges,
@@ -65,16 +84,39 @@ def solve():
     g = _parse_graph(data)
 
     algorithm = data.get("algorithm", "greedy")
+    _tag("algorithm", algorithm)
+    _tag("n", g.n)
+    is_custom = bool(data.get("graph_data"))
+    _crumb(
+        "solver", f"{algorithm} run",
+        n=g.n,
+        edges=len(g.edges),
+        source="custom" if is_custom else (data.get("instance") or "unknown"),
+    )
+
     if algorithm == "greedy":
-        result = solver.greedy(g)
+        with _span("solver.search", description="greedy", algorithm=algorithm, n=g.n):
+            result = solver.greedy(g)
     elif algorithm == "local_search":
-        result = solver.local_search(
-            g,
-            iterations=data.get("iterations", 2000),
-            temperature=data.get("temperature", 0.0),
+        iterations = data.get("iterations", 2000)
+        temperature = data.get("temperature", 0.0)
+        _tag("iterations", iterations)
+        _tag("temperature", temperature)
+        with _span(
+            "solver.search",
+            description="local search / SA",
+            algorithm=algorithm,
+            iterations=iterations,
+            temperature=temperature,
             cooling=data.get("cooling", 0.995),
-            seed=data.get("seed"),
-        )
+        ):
+            result = solver.local_search(
+                g,
+                iterations=iterations,
+                temperature=temperature,
+                cooling=data.get("cooling", 0.995),
+                seed=data.get("seed"),
+            )
     else:
         abort(400, description=f"Unknown algorithm: {algorithm}")
 
@@ -106,6 +148,11 @@ def validate():
     g = _parse_graph(data)
     dominating_set = data.get("dominating_set", [])
 
+    _crumb(
+        "solver", "validate run",
+        n=g.n,
+        ds_size=len(dominating_set),
+    )
     statuses = solver.validate(g, dominating_set)
     all_satisfied = all(s.satisfied for s in statuses)
     return jsonify(
