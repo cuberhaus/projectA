@@ -1,5 +1,6 @@
 FROM node:22-slim AS frontend
 WORKDIR /app
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY web/frontend/package.json web/frontend/package-lock.json* ./
 RUN npm ci
 COPY web/frontend/ ./
