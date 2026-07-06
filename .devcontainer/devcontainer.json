@@ -1,0 +1,19 @@
+{
+  "//": "cuberhaus reproducible dev environment (c/c++). Managed source: cuberhaus-workspace/assets/devcontainers/cpp. Applied per repo by scripts/apply-devcontainers.ps1.",
+  "name": "cuberhaus cpp",
+  "image": "mcr.microsoft.com/devcontainers/cpp:1-debian-12",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash -lc 'if [ -f skills-lock.json ]; then make skills-restore || true; fi'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools"
+      ]
+    }
+  }
+}
